@@ -21,19 +21,38 @@ data PTree = Nop
 			deriving (Show, Eq)
 
 pushToSemanticStack :: SemanticStack -> Statements -> Env -> SemanticStack
-pushToSemanticStack semstack [] _ = semstack
-pushToSemanticStack semstack (stmt:stmts) env = pushToSemanticStack ((stmt,env):semstack) stmts env
+pushToSemanticStack sem_stack [] _ = sem_stack
+pushToSemanticStack sem_stack (stmt:stmts) env = pushToSemanticStack ((stmt,env):sem_stack) stmts env
+
+popFromSemanticStack :: SemanticStack -> (PTree,Env)
+popFromSemanticStack = head
+
+executeStatement :: SemanticStack -> SAS -> (SemanticStack,SAS)
+executeStatement sem_stack sas = case curr_stmt of
+	Nop -> (new_sem_stack,sas) where
+		new_sem_stack = tail sem_stack
+	LocalVar (Ident x) stmts -> (new_sem_stack,new_sas) where
+		new_sas = SAS.addKeyToSAS (SAS.getSizeOfSAS sas) sas
+		new_env = Environment.mergeLocalEnv sas curr_env x
+		popped_stack = tail sem_stack
+		new_sem_stack = pushToSemanticStack popped_stack (reverse stmts) new_env
+	where
+		curr_stmt = fst $ popFromSemanticStack sem_stack
+		curr_env = snd $ popFromSemanticStack sem_stack
 
 executeProgram :: SemanticStack -> SAS -> String
-executeProgram semstack sas = case semstack of
+executeProgram sem_stack sas = case sem_stack of
 	[] -> show sas
-	top:bottom -> show semstack
+	top:bottom -> executeProgram new_sem_stack new_sas where
+		(new_sem_stack,new_sas) = executeStatement sem_stack sas
 
-program = [LocalVar (Ident "x") [BindVarToVal (Ident "x") (Value "1")],LocalVar (Ident "y") [BindVarToVal (Ident "y") (Value "2")]]
+program_1 = [LocalVar (Ident "x") [BindVarToVal (Ident "x") (Value "1")], LocalVar (Ident "y") [BindVarToVal (Ident "y") (Value "2")]]
+program_2 = [Nop, Nop, Nop]
+program_3 = [LocalVar (Ident "x") [LocalVar (Ident "y") [LocalVar (Ident "z") [Nop]]]]
 sas = SAS.initializeSAS
 env = Environment.initializeEnv
-semstack = pushToSemanticStack [] (reverse program) env
+sem_stack = pushToSemanticStack [] (reverse program_3) env
 
 main = do
-	putStrLn $ executeProgram semstack sas
+	putStrLn $ executeProgram sem_stack sas
 	putStrLn "Hello world!"
