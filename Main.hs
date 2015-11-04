@@ -1,3 +1,4 @@
+import qualified Control.Exception as E
 import SAS
 import Environment
 
@@ -27,15 +28,52 @@ pushToSemanticStack sem_stack (stmt:stmts) env = pushToSemanticStack ((stmt,env)
 popFromSemanticStack :: SemanticStack -> (PTree,Env)
 popFromSemanticStack = head
 
+selectStatements :: String -> Statements -> Statements -> SemanticStack -> SAS -> Env -> (SemanticStack,SAS)
+selectStatements "true" stmts_if stmts_else sem_stack sas curr_env = (new_sem_stack,sas) where
+																		popped_stack = tail sem_stack
+																		new_sem_stack = pushToSemanticStack popped_stack (reverse stmts_if) curr_env
+selectStatements "false" stmts_if stmts_else sem_stack sas curr_env = (new_sem_stack,sas) where
+																		popped_stack = tail sem_stack
+																		new_sem_stack = pushToSemanticStack popped_stack (reverse stmts_else) curr_env
+selectStatements _ _ _ _ _ _ = error "Boolean value required for a Conditional clause."
+
+evaluateExpression :: Operand -> Int -> Int -> Int
+evaluateExpression Plus x y = x + y
+evaluateExpression Minus x y = x - y
+evaluateExpression Multiply x y = x * y
+evaluateExpression Divide x y = x `div` y
+
+applyArithmeticOperation :: Operand -> String -> String -> String
+-- TO DO: INCLUDE ERROR CHECKING - IF THE VALUES x AND y ARE VALID NUMBERS OR NOT
+applyArithmeticOperation op x y = show $ evaluateExpression op (read x :: Int) (read y :: Int)
+
 executeStatement :: SemanticStack -> SAS -> (SemanticStack,SAS)
 executeStatement sem_stack sas = case curr_stmt of
 	Nop -> (new_sem_stack,sas) where
 		new_sem_stack = tail sem_stack
 	LocalVar (Ident x) stmts -> (new_sem_stack,new_sas) where
-		new_sas = SAS.addKeyToSAS (SAS.getSizeOfSAS sas) sas
-		new_env = Environment.mergeLocalEnv sas curr_env x
+		--new_sas = SAS.addKeyToSAS (SAS.getSizeOfSAS sas) sas
+		(new_env,new_sas) = Environment.mergeLocalEnv sas curr_env x
 		popped_stack = tail sem_stack
 		new_sem_stack = pushToSemanticStack popped_stack (reverse stmts) new_env
+	BindVarToVal (Ident x) (Value y) -> (new_sem_stack,new_sas) where
+		-- TO DO: INCLUDE ERROR CHECKING - IF THE GIVEN IDENTIFIER (x) IS DECLARED OR NOT
+		new_sem_stack = tail sem_stack
+		new_sas = SAS.bindValToKeyInSAS key y sas where
+			key = Environment.getVarInEnv x curr_env
+			--if Environment.checkIfVarInEnv x curr_env
+			--	then key = Environment.getVarInEnv x curr_env
+			--	else error x ++ " not declared"
+	Conditional (Ident x) stmts_if stmts_else -> selectStatements val stmts_if stmts_else sem_stack sas curr_env where
+		key = Environment.getVarInEnv x curr_env
+		val = SAS.retrieveFromSAS key sas
+	OperateWithVal (Ident r) (Ident x) op (Value v) -> (new_sem_stack,new_sas) where
+		new_sem_stack = tail sem_stack
+		new_sas = SAS.bindValToKeyInSAS key val sas where
+			key = Environment.getVarInEnv r curr_env
+			val = applyArithmeticOperation op val_x v where
+				key_x = Environment.getVarInEnv x curr_env
+				val_x = SAS.retrieveFromSAS key_x sas
 	where
 		curr_stmt = fst $ popFromSemanticStack sem_stack
 		curr_env = snd $ popFromSemanticStack sem_stack
@@ -49,9 +87,15 @@ executeProgram sem_stack sas = case sem_stack of
 program_1 = [LocalVar (Ident "x") [BindVarToVal (Ident "x") (Value "1")], LocalVar (Ident "y") [BindVarToVal (Ident "y") (Value "2")]]
 program_2 = [Nop, Nop, Nop]
 program_3 = [LocalVar (Ident "x") [LocalVar (Ident "y") [LocalVar (Ident "z") [Nop]]]]
+program_4 = [LocalVar (Ident "x") [LocalVar (Ident "y") [LocalVar (Ident "x") [LocalVar (Ident "y") [Nop]]]]]
+program_5 = [LocalVar (Ident "a") [LocalVar (Ident "b") [BindVarToVal (Ident "a") (Value "3"), BindVarToVal (Ident "b") (Value "4")], Nop], Nop]
+program_6 = [LocalVar (Ident "a") [LocalVar (Ident "a") [BindVarToVal (Ident "a") (Value "5"), BindVarToVal (Ident "a") (Value "6")], BindVarToVal (Ident "a") (Value "7")], Nop]
+program_7 = [LocalVar (Ident "clause") [LocalVar (Ident "p") [BindVarToVal (Ident "clause") (Value "true"), Conditional (Ident "clause") [BindVarToVal (Ident "p") (Value "clause was true")] [BindVarToVal (Ident "p") (Value "clause was false")]]]]
+program_8 = [Nop, LocalVar (Ident "a") [BindVarToVal (Ident "a") (Value "1")], LocalVar (Ident "b") [BindVarToVal (Ident "b") (Value "2"), BindVarToVal (Ident "a") (Value "3")], Nop]
+program_9 = [LocalVar (Ident "result") [LocalVar (Ident "variable") [BindVarToVal (Ident "variable") (Value "40"), OperateWithVal (Ident "result") (Ident "variable") Plus (Value "2")]]]
 sas = SAS.initializeSAS
 env = Environment.initializeEnv
-sem_stack = pushToSemanticStack [] (reverse program_3) env
+sem_stack = pushToSemanticStack [] (reverse program_9) env
 
 main = do
 	putStrLn $ executeProgram sem_stack sas
