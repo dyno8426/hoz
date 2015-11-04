@@ -23,14 +23,16 @@ module SAS where
 								then temp
 								else displaySAS sas (val+1) n (temp ++ "(" ++ (show val) ++ "," ++ (retrieveFromSAS val sas) ++ ")")
 
+	--sas = initializeSAS
 	--sas = fromList([(0,"abc"),(1,"def")])
 	--new_sas = addKeyToSAS (size sas) sas
+	--newer_sas = addKeyToSAS (size new_sas) new_sas
 	--str = retrieveFromSAS 2 new_sas
 	--sas_str = displaySAS new_sas 0 (size new_sas) ""
 
 	--main = do
 	--	putStrLn str
-	--	putStrLn sas_str
+	--	putStrLn $ show new_sas
+	--	putStrLn $ show newer_sas
 	--	putStrLn "Hello world!"
-
 	

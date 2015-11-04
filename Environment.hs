@@ -20,5 +20,4 @@ module Environment where
 	mergeLocalEnv :: SAS -> Env -> String -> Env
 	mergeLocalEnv sas parent_env var = Map.insert var (size new_sas) parent_env where
 										new_sas = Map.insert (size sas) "NULL" sas
-
 	
