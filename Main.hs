@@ -4,7 +4,7 @@ import Environment
 
 data Ident = Ident String deriving (Show, Eq)
 data Value = Value String deriving (Show, Eq)
-data Operand = Plus | Minus | Multiply | Divide deriving (Show, Eq)
+data Operator = Plus | Minus | Multiply | Divide deriving (Show, Eq)
 --data Statements = Statements [PTree] deriving (Show, Eq)
 
 type Statements = [PTree]
@@ -15,10 +15,10 @@ data PTree = Nop
 			| BindVarToVar Ident Ident
 			| BindVarToVal Ident Value
 			| Conditional Ident Statements Statements
-			| BindVarToProc Ident Ident Statements
-			| Apply Ident Ident String
-			| OperateWithVar Ident Ident Operand Ident
-			| OperateWithVal Ident Ident Operand Value
+			| BindVarToProc Ident [Ident] Statements
+			| Apply Ident [Ident]
+			| OperateWithVar Ident Ident Operator Ident
+			| OperateWithVal Ident Ident Operator Value
 			deriving (Show, Eq)
 
 pushToSemanticStack :: SemanticStack -> Statements -> Env -> SemanticStack
@@ -37,13 +37,13 @@ selectStatements "false" stmts_if stmts_else sem_stack sas eq_sets curr_env = (n
 																				new_sem_stack = pushToSemanticStack popped_stack (reverse stmts_else) curr_env
 selectStatements _ _ _ _ _ _ _ = error "Boolean value required for a Conditional clause."
 
-evaluateExpression :: Operand -> Int -> Int -> Int
+evaluateExpression :: Operator -> Int -> Int -> Int
 evaluateExpression Plus x y = x + y
 evaluateExpression Minus x y = x - y
 evaluateExpression Multiply x y = x * y
 evaluateExpression Divide x y = x `div` y
 
-applyArithmeticOperation :: Operand -> String -> String -> String
+applyArithmeticOperation :: Operator -> String -> String -> String
 -- TO DO: INCLUDE ERROR CHECKING - IF THE VALUES x AND y ARE VALID NUMBERS OR NOT
 applyArithmeticOperation op x y = show $ evaluateExpression op (read x :: Int) (read y :: Int)
 
