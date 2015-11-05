@@ -17,13 +17,13 @@ The developed interpreter is capable of processing properly formatted programs w
 	```
 	Nop
 	```
-	Has no effect the SAS.
+	Has no effect on SAS.
 
 2. _Variable Declaration_
 	```
 	LocalVar (Ident <identifier>) [Statements]
 	```
-	Allocates memory for the variable in the SAS and updates the current environment as well.
+	Allocates memory for the variable in SAS and updates the current environment as well.
 
 3. _Variable Binding_
 	```
@@ -63,7 +63,7 @@ The developed interpreter is capable of processing properly formatted programs w
 	```
 	Applies a given operator on two variables.
 
-Along with these features, the interpreter also performs error checking at various places in accordance to the rules defined by Oz architecture.
+Along with these features, the interpreter also performs error checking at various places in accordance to the rules defined by the Oz architecture.
 
 ### Developers
 Adarsh Chauhan, Sai Krishna, Yeshi Dolma
