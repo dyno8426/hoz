@@ -114,7 +114,7 @@ program_13 = [LocalVar (Ident "x") [LocalVar (Ident "y") [BindVarToVar (Ident "x
 program_14 = [LocalVar (Ident "x") [BindVarToVal (Ident "x") (Value "alice"), LocalVar (Ident "x") [BindVarToVal (Ident "x") (Value "bob"), LocalVar (Ident "x") [BindVarToVal (Ident "x") (Value "alice and bob")]]]]
 (sas,eq_sets) = SAS.initializeSAS
 env = Environment.initializeEnv
-sem_stack = pushToSemanticStack [] (reverse program_14) env
+sem_stack = pushToSemanticStack [] (reverse program_7) env
 
 main = do
 	putStrLn $ executeProgram sem_stack sas eq_sets
