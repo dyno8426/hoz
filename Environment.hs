@@ -13,7 +13,7 @@ module Environment where
 	getVarInEnv :: String -> Env -> Int
 	getVarInEnv key env = case Map.lookup key env of
 								Just a -> a
-								Nothing -> error "Variable not declared in the current Environment."
+								Nothing -> error $ concat ["Variable '", key, "' not declared in the current Environment."]
 
 	checkIfVarInEnv :: String -> Env -> Bool
 	checkIfVarInEnv key env = Map.member key env

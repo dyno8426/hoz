@@ -57,7 +57,7 @@ executeStatement sem_stack sas eq_sets = case curr_stmt of
 		popped_stack = tail sem_stack
 		new_sem_stack = pushToSemanticStack popped_stack (reverse stmts) new_env
 	BindVarToVal (Ident x) (Value v) -> (new_sem_stack,new_sas,eq_sets) where
-		-- TO DO: INCLUDE ERROR CHECKING - IF THE GIVEN IDENTIFIER (x) IS DECLARED OR NOT
+		-- TO DO: INCLUDE ERROR CHECKING - IF THE IDENTIFER x HAS ALREADY BEEN ASSIGNED A VALUE
 		new_sem_stack = tail sem_stack
 		new_sas = SAS.bindValToKeyInSAS key v sas eq_sets where
 			key = Environment.getVarInEnv x curr_env
@@ -110,9 +110,11 @@ program_9 = [LocalVar (Ident "result") [LocalVar (Ident "variable") [BindVarToVa
 program_10 = [LocalVar (Ident "d") [LocalVar (Ident "e") [LocalVar (Ident "f") [BindVarToVal (Ident "e") (Value "5"), BindVarToVal (Ident "f") (Value "6"), OperateWithVar (Ident "d") (Ident "e") Plus (Ident "f")]]]]
 program_11 = [LocalVar (Ident "p") [LocalVar (Ident "q") [BindVarToVar (Ident "p") (Ident "q"), LocalVar (Ident "r") [BindVarToVar (Ident "r") (Ident "p"), BindVarToVal (Ident "q") (Value "42")]]]]
 program_12 = [LocalVar (Ident "m") [BindVarToVal (Ident "m") (Value "true"), LocalVar (Ident "n") [BindVarToVal (Ident "n") (Value "false"), LocalVar (Ident "o") [BindVarToVar (Ident "m") (Ident "n")]]]]
+program_13 = [LocalVar (Ident "x") [LocalVar (Ident "y") [BindVarToVar (Ident "x") (Ident "y"), BindVarToVal (Ident "x") (Value "true")]], LocalVar (Ident "p") [LocalVar (Ident "q") [BindVarToVal (Ident "q") (Value "false"), BindVarToVar (Ident "p") (Ident "q")]]]
+program_14 = [LocalVar (Ident "x") [BindVarToVal (Ident "x") (Value "alice"), LocalVar (Ident "x") [BindVarToVal (Ident "x") (Value "bob"), LocalVar (Ident "x") [BindVarToVal (Ident "x") (Value "alice and bob")]]]]
 (sas,eq_sets) = SAS.initializeSAS
 env = Environment.initializeEnv
-sem_stack = pushToSemanticStack [] (reverse program_11) env
+sem_stack = pushToSemanticStack [] (reverse program_14) env
 
 main = do
 	putStrLn $ executeProgram sem_stack sas eq_sets

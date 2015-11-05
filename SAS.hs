@@ -27,13 +27,15 @@ module SAS where
 										Just b -> b
 										Nothing -> error "Segmentation fault: Beyond allocated memory access in EqSets."
 
-	insertIntoAllEqSetKeys :: [Int] -> String -> SAS -> SAS
-	insertIntoAllEqSetKeys [] _ sas = sas
-	insertIntoAllEqSetKeys (key:keys) value sas = insertIntoAllEqSetKeys keys value (Map.insert key value sas)
+	insertIntoAllEqSetKeys :: Bool -> [Int] -> String -> SAS -> SAS
+	insertIntoAllEqSetKeys False _ _ _ = error "Binding to an already assigned variable in SAS."
+	insertIntoAllEqSetKeys True [] _ sas = sas
+	insertIntoAllEqSetKeys True (key:keys) value sas = insertIntoAllEqSetKeys True keys value (Map.insert key value sas)
 
 	bindValToKeyInSAS :: Int -> String -> SAS -> EqSets -> SAS
 	--bindValToKeyInSAS key value sas = Map.insert key value sas
-	bindValToKeyInSAS key value sas eq_sets = insertIntoAllEqSetKeys all_keys value sas where
+	bindValToKeyInSAS key value sas eq_sets = insertIntoAllEqSetKeys if_not_already_assigned all_keys value sas where
+													if_not_already_assigned = (retrieveFromSAS key sas)=="NULL"
 													all_keys = retrieveFromEqSets key eq_sets
 
 	--mergeEqSets :: EqSets -> Int -> Int -> EqSets
