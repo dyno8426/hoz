@@ -13,19 +13,19 @@ We have developed the interpreter for a __Kernel Version__ of Oz. Kernel of a la
 ### Features
 The developed interpreter is capable of processing properly formatted programs which can consist of the following statements:
 
-1. _Skip_
+1. __Skip__
 	```
 	Nop
 	```
 	Has no effect on SAS.
 
-2. _Variable Declaration_
+2. __Variable Declaration__
 	```
 	LocalVar (Ident <identifier>) [Statements]
 	```
 	Allocates memory for the variable in SAS and updates the current environment as well.
 
-3. _Variable Binding_
+3. __Variable Binding__
 	```
 	BindVarToVal (Ident <identifier>) (Value <value>)
 	```
@@ -35,25 +35,25 @@ The developed interpreter is capable of processing properly formatted programs w
 	```
 	For binding two variables.
 
-4. _Conditional_
+4. __Conditional__
 	```
 	Conditional (Ident <boolean_identifier>) [Statements] [Statements]
 	```
 	If-then-else statements.
 
-5. _Function Declaration_
+5. __Function Declaration__
 	```
 	BindVarToProc (Ident <procedure_name>) (Ident <argument>) [Statements]
 	```
 	Declares a procedure (a function with no return value).
 
-6. _Function Application_
+6. __Function Application__
 	```
 	Apply (Ident <procedure_name>) (Ident <argument>)
 	```
 	Applies a procedure on given arguments.
 
-7. _Basic Arithmetic Operations_
+7. __Basic Arithmetic Operations__
 	```
 	OperateWithVal (Ident <result>) (Ident <operand>) Operator (Value <value>)
 	```
@@ -63,7 +63,7 @@ The developed interpreter is capable of processing properly formatted programs w
 	```
 	Applies a given operator on two variables.
 
-Along with these features, the interpreter also performs error checking at various places in accordance to the rules defined by the Oz architecture.
+Along with these features, the interpreter also performs error checking at various places in accordance with the rules defined by the Oz architecture.
 
 ### Developers
-Adarsh Chauhan, Sai Krishna, Yeshi Dolma
+_Adarsh Chauhan_, _Sai Krishna_, _Yeshi Dolma_
