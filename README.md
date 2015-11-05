@@ -43,13 +43,13 @@ The developed interpreter is capable of processing properly formatted programs w
 
 5. __Function Declaration__
 	```
-	BindVarToProc (Ident <procedure_name>) (Ident <argument>) [Statements]
+	BindVarToProc (Ident <procedure_name>) [Ident <argument>] [Statements]
 	```
 	Declares a procedure (a function with no return value).
 
 6. __Function Application__
 	```
-	Apply (Ident <procedure_name>) (Ident <argument>)
+	Apply (Ident <procedure_name>) [Ident <argument>]
 	```
 	Applies a procedure on given arguments.
 
@@ -59,7 +59,7 @@ The developed interpreter is capable of processing properly formatted programs w
 	```
 	Applies a given operator on a variable and a value.
 	```
-	OperatorWithVar (Ident <result>) (Ident <operand_1>) Operator (Ident <operand_2>)
+	OperateWithVar (Ident <result>) (Ident <operand_1>) Operator (Ident <operand_2>)
 	```
 	Applies a given operator on two variables.
 
