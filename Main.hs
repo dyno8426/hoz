@@ -2,24 +2,24 @@ import qualified Control.Exception as E
 import SAS
 import Environment
 
-data Ident = Ident String deriving (Show, Eq)
-data Value = Value String deriving (Show, Eq)
-data Operator = Plus | Minus | Multiply | Divide deriving (Show, Eq)
---data Statements = Statements [PTree] deriving (Show, Eq)
+--data Ident = Ident String deriving (Show, Eq)
+--data Value = Value String deriving (Show, Eq)
+--data Operator = Plus | Minus | Multiply | Divide deriving (Show, Eq)
+----data Statements = Statements [PTree] deriving (Show, Eq)
 
-type Statements = [PTree]
-type SemanticStack = [(PTree,Env)]
+--type Statements = [PTree]
+--type SemanticStack = [(PTree,Env)]
 
-data PTree = Nop
-			| LocalVar Ident Statements
-			| BindVarToVar Ident Ident
-			| BindVarToVal Ident Value
-			| Conditional Ident Statements Statements
-			| BindVarToProc Ident [Ident] Statements
-			| Apply Ident [Ident]
-			| OperateWithVar Ident Ident Operator Ident
-			| OperateWithVal Ident Ident Operator Value
-			deriving (Show, Eq)
+--data PTree = Nop
+--			| LocalVar Ident Statements
+--			| BindVarToVar Ident Ident
+--			| BindVarToVal Ident Value
+--			| Conditional Ident Statements Statements
+--			| BindVarToProc Ident [Ident] Statements
+--			| Apply Ident [Ident]
+--			| OperateWithVar Ident Ident Operator Ident
+--			| OperateWithVal Ident Ident Operator Value
+--			deriving (Show, Eq)
 
 pushToSemanticStack :: SemanticStack -> Statements -> Env -> SemanticStack
 pushToSemanticStack sem_stack [] _ = sem_stack
@@ -28,11 +28,11 @@ pushToSemanticStack sem_stack (stmt:stmts) env = pushToSemanticStack ((stmt,env)
 popFromSemanticStack :: SemanticStack -> (PTree,Env)
 popFromSemanticStack = head
 
-selectStatements :: String -> Statements -> Statements -> SemanticStack -> SAS -> EqSets -> Env -> (SemanticStack,SAS,EqSets)
-selectStatements "true" stmts_if stmts_else sem_stack sas eq_sets curr_env = (new_sem_stack,sas,eq_sets) where
+selectStatements :: Store -> Statements -> Statements -> SemanticStack -> SAS -> EqSets -> Env -> (SemanticStack,SAS,EqSets)
+selectStatements (Datum "true") stmts_if stmts_else sem_stack sas eq_sets curr_env = (new_sem_stack,sas,eq_sets) where
 																				popped_stack = tail sem_stack
 																				new_sem_stack = pushToSemanticStack popped_stack (reverse stmts_if) curr_env
-selectStatements "false" stmts_if stmts_else sem_stack sas eq_sets curr_env = (new_sem_stack,sas,eq_sets) where
+selectStatements (Datum "false") stmts_if stmts_else sem_stack sas eq_sets curr_env = (new_sem_stack,sas,eq_sets) where
 																				popped_stack = tail sem_stack
 																				new_sem_stack = pushToSemanticStack popped_stack (reverse stmts_else) curr_env
 selectStatements _ _ _ _ _ _ _ = error "Boolean value required for a Conditional clause."
@@ -43,9 +43,10 @@ evaluateExpression Minus x y = x - y
 evaluateExpression Multiply x y = x * y
 evaluateExpression Divide x y = x `div` y
 
-applyArithmeticOperation :: Operator -> String -> String -> String
+applyArithmeticOperation :: Operator -> Store -> Store -> Store
 -- TO DO: INCLUDE ERROR CHECKING - IF THE VALUES x AND y ARE VALID NUMBERS OR NOT
-applyArithmeticOperation op x y = show $ evaluateExpression op (read x :: Int) (read y :: Int)
+applyArithmeticOperation op (Datum x) (Datum y) = Datum $ show (evaluateExpression op (read x :: Int) (read y :: Int))
+applyArithmeticOperation _ _ _ = error "Operating on incompatible values in SAS."
 
 executeStatement :: SemanticStack -> SAS -> EqSets -> (SemanticStack,SAS,EqSets)
 executeStatement sem_stack sas eq_sets = case curr_stmt of
@@ -59,7 +60,7 @@ executeStatement sem_stack sas eq_sets = case curr_stmt of
 	BindVarToVal (Ident x) (Value v) -> (new_sem_stack,new_sas,eq_sets) where
 		-- TO DO: INCLUDE ERROR CHECKING - IF THE IDENTIFER x HAS ALREADY BEEN ASSIGNED A VALUE
 		new_sem_stack = tail sem_stack
-		new_sas = SAS.bindValToKeyInSAS key v sas eq_sets where
+		new_sas = SAS.bindValToKeyInSAS key (Datum v) sas eq_sets where
 			key = Environment.getVarInEnv x curr_env
 			--if Environment.checkIfVarInEnv x curr_env
 			--	then key = Environment.getVarInEnv x curr_env
@@ -76,7 +77,7 @@ executeStatement sem_stack sas eq_sets = case curr_stmt of
 		new_sem_stack = tail sem_stack
 		new_sas = SAS.bindValToKeyInSAS key val sas eq_sets where
 			key = Environment.getVarInEnv r curr_env
-			val = applyArithmeticOperation op val_x v where
+			val = applyArithmeticOperation op val_x (Datum v) where
 				key_x = Environment.getVarInEnv x curr_env
 				val_x = SAS.retrieveFromSAS key_x sas
 	OperateWithVar (Ident r) (Ident x) op (Ident y) -> (new_sem_stack,new_sas,eq_sets) where
@@ -114,7 +115,7 @@ program_13 = [LocalVar (Ident "x") [LocalVar (Ident "y") [BindVarToVar (Ident "x
 program_14 = [LocalVar (Ident "x") [BindVarToVal (Ident "x") (Value "alice"), LocalVar (Ident "x") [BindVarToVal (Ident "x") (Value "bob"), LocalVar (Ident "x") [BindVarToVal (Ident "x") (Value "alice and bob")]]]]
 (sas,eq_sets) = SAS.initializeSAS
 env = Environment.initializeEnv
-sem_stack = pushToSemanticStack [] (reverse program_7) env
+sem_stack = pushToSemanticStack [] (reverse program_8) env
 
 main = do
 	putStrLn $ executeProgram sem_stack sas eq_sets

@@ -3,7 +3,33 @@ module SAS where
 	import Data.Map
 	import qualified Data.Map as Map
 
-	type SAS = Map Int String
+	type Env = Map String Int
+
+	data Ident = Ident String deriving (Show, Eq)
+	data Value = Value String deriving (Show, Eq)
+	data Operator = Plus | Minus | Multiply | Divide deriving (Show, Eq)
+	--data Statements = Statements [PTree] deriving (Show, Eq)
+
+	type Statements = [PTree]
+	type SemanticStack = [(PTree,Env)]
+
+	data PTree = Nop
+				| LocalVar Ident Statements
+				| BindVarToVar Ident Ident
+				| BindVarToVal Ident Value
+				| Conditional Ident Statements Statements
+				| BindVarToProc Ident [Ident] Statements
+				| Apply Ident [Ident]
+				| OperateWithVar Ident Ident Operator Ident
+				| OperateWithVal Ident Ident Operator Value
+				deriving (Show, Eq)
+
+	data Store = Null
+				| Datum String
+				| Proc (Statements,Env,[Ident])
+				deriving (Show, Eq)
+
+	type SAS = Map Int Store
 	type EqSets = Map Int [Int]
 
 	initializeSAS :: (SAS,EqSets)
@@ -14,10 +40,10 @@ module SAS where
 
 	addKeyToSAS :: Int -> SAS -> EqSets -> (SAS,EqSets)
 	addKeyToSAS key sas eq_sets = (new_sas,new_eq_sets) where
-										new_sas = Map.insert key "NULL" sas
+										new_sas = Map.insert key Null sas
 										new_eq_sets = Map.insert key [key] eq_sets
 
-	retrieveFromSAS :: Int -> SAS -> String
+	retrieveFromSAS :: Int -> SAS -> Store
 	retrieveFromSAS key sas = case Map.lookup key sas of
 								Just a -> a
 								Nothing -> error "Segmentation fault: Beyond allocated memory access in SAS."
@@ -27,15 +53,15 @@ module SAS where
 										Just b -> b
 										Nothing -> error "Segmentation fault: Beyond allocated memory access in EqSets."
 
-	insertIntoAllEqSetKeys :: Bool -> [Int] -> String -> SAS -> SAS
+	insertIntoAllEqSetKeys :: Bool -> [Int] -> Store -> SAS -> SAS
 	insertIntoAllEqSetKeys False _ _ _ = error "Binding to an already assigned variable in SAS."
 	insertIntoAllEqSetKeys True [] _ sas = sas
 	insertIntoAllEqSetKeys True (key:keys) value sas = insertIntoAllEqSetKeys True keys value (Map.insert key value sas)
 
-	bindValToKeyInSAS :: Int -> String -> SAS -> EqSets -> SAS
+	bindValToKeyInSAS :: Int -> Store -> SAS -> EqSets -> SAS
 	--bindValToKeyInSAS key value sas = Map.insert key value sas
 	bindValToKeyInSAS key value sas eq_sets = insertIntoAllEqSetKeys if_not_already_assigned all_keys value sas where
-													if_not_already_assigned = (retrieveFromSAS key sas)=="NULL"
+													if_not_already_assigned = (retrieveFromSAS key sas)==Null
 													all_keys = retrieveFromEqSets key eq_sets
 
 	--mergeEqSets :: EqSets -> Int -> Int -> EqSets
@@ -52,13 +78,13 @@ module SAS where
 	findMergedEqSet eq_sets key_x key_y = concat [(retrieveFromEqSets key_x eq_sets), (retrieveFromEqSets key_y eq_sets)]
 
 	bindKeyToKeyInSAS :: Int -> Int -> SAS -> EqSets -> (SAS,EqSets)
-	bindKeyToKeyInSAS key_x key_y sas eq_sets = if (retrieveFromSAS key_x sas)=="NULL"
-												then	if (retrieveFromSAS key_y sas)=="NULL"
+	bindKeyToKeyInSAS key_x key_y sas eq_sets = if (retrieveFromSAS key_x sas)==Null
+												then	if (retrieveFromSAS key_y sas)==Null
 														--then (sas,(mergeEqSets eq_sets key_x key_y))
 														--else ((bindValToKeyInSAS key_x (retrieveFromSAS key_y sas) sas eq_sets),(mergeEqSets eq_sets key_x key_y))
 														then (sas,(mergeEqSetsRecursively eq_sets (findMergedEqSet eq_sets key_x key_y) (findMergedEqSet eq_sets key_x key_y)))
 														else ((bindValToKeyInSAS key_x (retrieveFromSAS key_y sas) sas eq_sets),(mergeEqSetsRecursively eq_sets (findMergedEqSet eq_sets key_x key_y) (findMergedEqSet eq_sets key_x key_y)))
-												else	if (retrieveFromSAS key_y sas)=="NULL"
+												else	if (retrieveFromSAS key_y sas)==Null
 														then ((bindValToKeyInSAS key_y (retrieveFromSAS key_x sas) sas eq_sets),(mergeEqSetsRecursively eq_sets (findMergedEqSet eq_sets key_x key_y) (findMergedEqSet eq_sets key_x key_y)))
 														else	if (retrieveFromSAS key_x sas)==(retrieveFromSAS key_y sas)
 																then (sas,(mergeEqSetsRecursively eq_sets (findMergedEqSet eq_sets key_x key_y) (findMergedEqSet eq_sets key_x key_y)))

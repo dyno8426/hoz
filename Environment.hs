@@ -4,7 +4,7 @@ module Environment where
 	import qualified Data.Map as Map
 	import SAS
 
-	type Env = Map String Int
+	--type Env = Map String Int
 
 	initializeEnv :: Env
 	initializeEnv = Map.empty
