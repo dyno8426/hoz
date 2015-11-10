@@ -62,11 +62,13 @@ The developed interpreter is capable of processing properly formatted programs w
 	OperateWithVar (Ident <result>) (Ident <operand_1>) Operator (Ident <operand_2>)
 	```
 	Applies a given operator on two variables.
+
 8. __Record Declaration__
 	```
 	BindVarToRec (Ident <record_name>) <label> [(<feature_name>,(Ident <identifier_name>))]
 	```
 	Declares a record (which consists of a label and a set of {feature,value} pairs).
+
 9. __Pattern Matching__
 	```
 	Case (Ident <record_name>) <pattern_label> [(<pattern_feature_name>,(Ident <pattern_identifier_name>))] Statements Statements
