@@ -8,6 +8,7 @@ module SAS where
 	data Ident = Ident String deriving (Show, Eq)
 	data Value = Value String deriving (Show, Eq)
 	data Operator = Plus | Minus | Multiply | Divide deriving (Show, Eq)
+	data Literal = Literal String deriving (Show, Eq)
 	--data Statements = Statements [PTree] deriving (Show, Eq)
 
 	type Statements = [PTree]
@@ -22,11 +23,13 @@ module SAS where
 				| Apply Ident [Ident]
 				| OperateWithVar Ident Ident Operator Ident
 				| OperateWithVal Ident Ident Operator Value
+				| BindVarToRec Ident String [(String,Ident)]
 				deriving (Show, Eq)
 
 	data Store = Null
 				| Datum String
 				| Proc ([Ident],Statements,Env)
+				| Record (Literal,[(Literal,Int)])
 				deriving (Show, Eq)
 
 	type SAS = Map Int Store

@@ -64,6 +64,15 @@ bindCurrAndProcArguments proc [] _ _ _ = error $ concat ["Less than required arg
 bindCurrAndProcArguments proc (c_key:c_keys) (p_key:p_keys) sas eq_sets = bindCurrAndProcArguments proc c_keys p_keys new_sas new_eq_sets where
 																			(new_sas,new_eq_sets) = SAS.bindKeyToKeyInSAS c_key p_key sas eq_sets
 
+checkAndExtractComponents :: String -> Store -> ([Ident],Statements,Env)
+checkAndExtractComponents _ (Proc (a,b,c)) = (a,b,c)
+checkAndExtractComponents proc _ = error $ concat ["'", proc, "' is not a defined Procedure in SAS."]
+
+getKeysForFeatures :: [(String,Ident)] -> Env -> [(Literal,Int)] -> [(Literal,Int)]
+getKeysForFeatures [] _ l_and_k = l_and_k
+getKeysForFeatures ((feature,(Ident x)):tuples) curr_env l_and_k = getKeysForFeatures tuples curr_env (concat [l_and_k,[((Literal feature),key)]]) where
+																key = Environment.getVarInEnv x curr_env
+
 executeStatement :: SemanticStack -> SAS -> EqSets -> (SemanticStack,SAS,EqSets)
 executeStatement sem_stack sas eq_sets = case curr_stmt of
 	Nop -> (new_sem_stack,sas,eq_sets) where
@@ -96,7 +105,7 @@ executeStatement sem_stack sas eq_sets = case curr_stmt of
 			val = Proc (args,stmts,curr_env)
 	Apply (Ident proc) args -> (new_sem_stack,new_sas,new_eq_sets) where
 		curr_args_keys = findFromEnvironment curr_env args []
-		Proc (proc_args,proc_stmts,proc_env) = proc_def where
+		(proc_args,proc_stmts,proc_env) = checkAndExtractComponents proc proc_def where
 			key = Environment.getVarInEnv proc curr_env
 			proc_def = SAS.retrieveFromSAS key sas
 		(temp_env,temp_sas,temp_eq_sets) = declareProcedureArguments sas eq_sets proc_env proc_args
@@ -120,6 +129,12 @@ executeStatement sem_stack sas eq_sets = case curr_stmt of
 				val_x = SAS.retrieveFromSAS key_x sas
 				key_y = Environment.getVarInEnv y curr_env
 				val_y = SAS.retrieveFromSAS key_y sas
+	BindVarToRec (Ident x) name features_and_values -> (new_sem_stack,new_sas,eq_sets) where
+		new_sem_stack = tail sem_stack
+		new_sas = SAS.bindValToKeyInSAS key val sas eq_sets where
+			key = Environment.getVarInEnv x curr_env
+			val = Record ((Literal name),literals_and_keys) where
+				literals_and_keys = getKeysForFeatures features_and_values curr_env []
 	where
 		curr_stmt = fst $ popFromSemanticStack sem_stack
 		curr_env = snd $ popFromSemanticStack sem_stack
@@ -146,9 +161,12 @@ program_13 = [LocalVar (Ident "x") [LocalVar (Ident "y") [BindVarToVar (Ident "x
 program_14 = [LocalVar (Ident "x") [BindVarToVal (Ident "x") (Value "alice"), LocalVar (Ident "x") [BindVarToVal (Ident "x") (Value "bob"), LocalVar (Ident "x") [BindVarToVal (Ident "x") (Value "alice and bob")]]]]
 program_15 = [LocalVar (Ident "proc_1") [LocalVar (Ident "x") [BindVarToVal (Ident "x") (Value "42"), BindVarToProc (Ident "proc_1") [(Ident "x"), (Ident "y")] [OperateWithVal (Ident "y") (Ident "x") Plus (Value "1")]]]]
 program_16 = [LocalVar (Ident "add_one") [LocalVar (Ident "x") [BindVarToVal (Ident "x") (Value "41"), BindVarToProc (Ident "add_one") [(Ident "p_y")] [OperateWithVal (Ident "p_y") (Ident "x") Plus (Value "1")], LocalVar (Ident "x") [LocalVar (Ident "y") [BindVarToVal (Ident "x") (Value "99"), Apply (Ident "add_one") [(Ident "y")]]]]]]
+program_17 = [LocalVar (Ident "add_x_y") [LocalVar (Ident "x") [BindVarToProc (Ident "add_x_y") [(Ident "y"), (Ident "z")] [OperateWithVar (Ident "z") (Ident "x") Plus (Ident "y")], BindVarToVal (Ident "x") (Value "2")], LocalVar (Ident "x") [LocalVar (Ident "y") [LocalVar (Ident "z") [BindVarToVal (Ident "x") (Value "10"), BindVarToVal (Ident "y") (Value "40"), Apply (Ident "add_x_y") [(Ident "y"), (Ident "z")]]]]]]
+program_18 = [LocalVar (Ident "add_x_y") [LocalVar (Ident "x") [BindVarToProc (Ident "add_x_y") [(Ident "y"), (Ident "z")] [OperateWithVar (Ident "z") (Ident "x") Plus (Ident "y")], BindVarToVal (Ident "x") (Value "2")], LocalVar (Ident "x") [LocalVar (Ident "y") [LocalVar (Ident "z") [BindVarToVal (Ident "x") (Value "10"), BindVarToVal (Ident "y") (Value "40"), Apply (Ident "x") [(Ident "y"), (Ident "z")]]]]]]
+program_19 = [LocalVar (Ident "someone") [LocalVar (Ident "name") [LocalVar (Ident "id") [BindVarToVal (Ident "id") (Value "786"), BindVarToRec (Ident "someone") "employee" [("name",(Ident "name")), ("id",(Ident "id"))]], BindVarToVal (Ident "name") (Value "ramu")]]]
 (sas,eq_sets) = SAS.initializeSAS
 env = Environment.initializeEnv
-sem_stack = pushToSemanticStack [] (reverse program_16) env
+sem_stack = pushToSemanticStack [] (reverse program_19) env
 
 main = do
 	putStrLn $ executeProgram sem_stack sas eq_sets
