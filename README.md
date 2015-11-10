@@ -21,7 +21,7 @@ The developed interpreter is capable of processing properly formatted programs w
 
 2. __Variable Declaration__
 	```
-	LocalVar (Ident <identifier>) [Statements]
+	LocalVar (Ident <identifier>) Statements
 	```
 	Allocates memory for the variable in SAS and updates the current environment as well.
 
@@ -37,13 +37,13 @@ The developed interpreter is capable of processing properly formatted programs w
 
 4. __Conditional__
 	```
-	Conditional (Ident <boolean_identifier>) [Statements] [Statements]
+	Conditional (Ident <boolean_identifier>) Statements Statements
 	```
-	If-then-else statements.
+	The standard 'if-then-else' statements.
 
 5. __Function Declaration__
 	```
-	BindVarToProc (Ident <procedure_name>) [Ident <argument>] [Statements]
+	BindVarToProc (Ident <procedure_name>) [Ident <argument>] Statements
 	```
 	Declares a procedure (a function with no return value).
 
@@ -62,8 +62,18 @@ The developed interpreter is capable of processing properly formatted programs w
 	OperateWithVar (Ident <result>) (Ident <operand_1>) Operator (Ident <operand_2>)
 	```
 	Applies a given operator on two variables.
+8. __Record Declaration__
+	```
+	BindVarToRec (Ident <record_name>) <label> [(<feature_name>,(Ident <identifier_name>))]
+	```
+	Declares a record (which consists of a label and a set of {feature,value} pairs).
+9. __Pattern Matching__
+	```
+	Case (Ident <record_name>) <pattern_label> [(<pattern_feature_name>,(Ident <pattern_identifier_name>))] Statements Statements
+	```
+	The standard 'case' statements.
 
-Along with these features, the interpreter also performs error checking at various places in accordance with the rules defined by the Oz architecture.
+Along with these features, the interpreter also performs __error checking__ at various places in accordance with the rules defined by the Oz architecture.
 
 ### Developers
 _Adarsh Chauhan_, _Sai Krishna_, _Yeshi Dolma_
