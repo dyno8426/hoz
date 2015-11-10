@@ -26,7 +26,7 @@ module SAS where
 
 	data Store = Null
 				| Datum String
-				| Proc (Statements,Env,[Ident])
+				| Proc ([Ident],Statements,Env)
 				deriving (Show, Eq)
 
 	type SAS = Map Int Store
