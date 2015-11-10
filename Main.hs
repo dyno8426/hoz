@@ -73,6 +73,41 @@ getKeysForFeatures [] _ l_and_k = l_and_k
 getKeysForFeatures ((feature,(Ident x)):tuples) curr_env l_and_k = getKeysForFeatures tuples curr_env (concat [l_and_k,[((Literal feature),key)]]) where
 																key = Environment.getVarInEnv x curr_env
 
+matchAllFeatures :: [(Literal,Int)] -> [(String,Ident)] -> Bool
+matchAllFeatures [] [] = True
+matchAllFeatures [] _ = False
+matchAllFeatures _ [] = False
+matchAllFeatures (((Literal label),key):rest_l_and_k) ((name,value):rest_f_and_v) =	if label==name
+																					then matchAllFeatures rest_l_and_k rest_f_and_v
+																					else False
+
+declareRecordValues :: SAS -> EqSets -> Env -> [(String,Ident)] -> (Env,SAS,EqSets)
+declareRecordValues sas eq_sets curr_env [] = (curr_env,sas,eq_sets)
+declareRecordValues sas eq_sets curr_env ((name,(Ident x)):rest_f_and_v) = declareRecordValues new_sas new_eq_sets new_env rest_f_and_v where
+																			(new_env,new_sas,new_eq_sets) = Environment.mergeLocalEnv sas eq_sets curr_env x
+
+bindKeysToValues :: [(Literal,Int)] -> [(String,Ident)] -> SAS -> EqSets -> Env -> (SAS,EqSets)
+bindKeysToValues [] [] sas eq_sets _ = (sas,eq_sets)
+bindKeysToValues (((Literal label),key):rest_l_and_k) ((name,(Ident x)):rest_f_and_v) sas eq_sets curr_env = bindKeysToValues rest_l_and_k rest_f_and_v new_sas new_eq_sets curr_env where
+																												(new_sas,new_eq_sets) = SAS.bindKeyToKeyInSAS key key_x sas eq_sets where
+																													key_x = Environment.getVarInEnv x curr_env
+
+doDeclarationAndBinding :: [(Literal,Int)] -> [(String,Ident)] -> Statements -> SemanticStack -> SAS -> EqSets -> Env -> (SemanticStack,SAS,EqSets)
+doDeclarationAndBinding literals_and_keys features_and_values stmts sem_stack sas eq_sets curr_env = (new_sem_stack,new_sas,new_eq_sets) where
+																								(new_env,temp_sas,temp_eq_sets) = declareRecordValues sas eq_sets curr_env features_and_values
+																								(new_sas,new_eq_sets) = bindKeysToValues literals_and_keys features_and_values temp_sas temp_eq_sets new_env
+																								new_sem_stack = pushToSemanticStack sem_stack (reverse stmts) new_env
+
+patternMatching :: String -> Store -> String -> [(String,Ident)] -> Statements -> Statements -> SemanticStack -> SAS -> EqSets -> Env -> (SemanticStack,SAS,EqSets)
+patternMatching record (Record ((Literal label),literals_and_keys)) name features_and_values stmts_if stmts_else popped_stack sas eq_sets curr_env =	if label==name
+																																						then	if (length literals_and_keys)==(length features_and_values)
+																																								then	if (matchAllFeatures literals_and_keys features_and_values)
+																																										then doDeclarationAndBinding literals_and_keys features_and_values stmts_if popped_stack sas eq_sets curr_env
+																																										else ((pushToSemanticStack popped_stack (reverse stmts_else) curr_env),sas,eq_sets)
+																																								else ((pushToSemanticStack popped_stack (reverse stmts_else) curr_env),sas,eq_sets)
+																																						else ((pushToSemanticStack popped_stack (reverse stmts_else) curr_env),sas,eq_sets)
+patternMatching record _ _ _ _ _ _ _ _ _ = error $ concat ["Incompatible Pattern Matching as '", record, "' is not a Record in SAS."]
+
 executeStatement :: SemanticStack -> SAS -> EqSets -> (SemanticStack,SAS,EqSets)
 executeStatement sem_stack sas eq_sets = case curr_stmt of
 	Nop -> (new_sem_stack,sas,eq_sets) where
@@ -135,6 +170,10 @@ executeStatement sem_stack sas eq_sets = case curr_stmt of
 			key = Environment.getVarInEnv x curr_env
 			val = Record ((Literal name),literals_and_keys) where
 				literals_and_keys = getKeysForFeatures features_and_values curr_env []
+	Case (Ident record) name features_and_values stmts_if stmts_else -> patternMatching record val name features_and_values stmts_if stmts_else popped_stack sas eq_sets curr_env where
+		key = Environment.getVarInEnv record curr_env
+		val = SAS.retrieveFromSAS key sas
+		popped_stack = tail sem_stack
 	where
 		curr_stmt = fst $ popFromSemanticStack sem_stack
 		curr_env = snd $ popFromSemanticStack sem_stack
@@ -164,9 +203,10 @@ program_16 = [LocalVar (Ident "add_one") [LocalVar (Ident "x") [BindVarToVal (Id
 program_17 = [LocalVar (Ident "add_x_y") [LocalVar (Ident "x") [BindVarToProc (Ident "add_x_y") [(Ident "y"), (Ident "z")] [OperateWithVar (Ident "z") (Ident "x") Plus (Ident "y")], BindVarToVal (Ident "x") (Value "2")], LocalVar (Ident "x") [LocalVar (Ident "y") [LocalVar (Ident "z") [BindVarToVal (Ident "x") (Value "10"), BindVarToVal (Ident "y") (Value "40"), Apply (Ident "add_x_y") [(Ident "y"), (Ident "z")]]]]]]
 program_18 = [LocalVar (Ident "add_x_y") [LocalVar (Ident "x") [BindVarToProc (Ident "add_x_y") [(Ident "y"), (Ident "z")] [OperateWithVar (Ident "z") (Ident "x") Plus (Ident "y")], BindVarToVal (Ident "x") (Value "2")], LocalVar (Ident "x") [LocalVar (Ident "y") [LocalVar (Ident "z") [BindVarToVal (Ident "x") (Value "10"), BindVarToVal (Ident "y") (Value "40"), Apply (Ident "x") [(Ident "y"), (Ident "z")]]]]]]
 program_19 = [LocalVar (Ident "someone") [LocalVar (Ident "name") [LocalVar (Ident "id") [BindVarToVal (Ident "id") (Value "786"), BindVarToRec (Ident "someone") "employee" [("name",(Ident "name")), ("id",(Ident "id"))]], BindVarToVal (Ident "name") (Value "ramu")]]]
+program_20 = [LocalVar (Ident "x") [LocalVar (Ident "y") [LocalVar (Ident "something") [BindVarToRec (Ident "something") "person" [("gender",(Ident "x")), ("age",(Ident "y"))], Case (Ident "something") "person" [("gender",(Ident "u")), ("age",(Ident "v"))] [BindVarToVal (Ident "u") (Value "pattern was matched..."), BindVarToVal (Ident "v") (Value "woohooo...")] [BindVarToVal (Ident "x") (Value "pattern was not matched..."), BindVarToVal (Ident "y") (Value "project completed!")]]]]]
 (sas,eq_sets) = SAS.initializeSAS
 env = Environment.initializeEnv
-sem_stack = pushToSemanticStack [] (reverse program_19) env
+sem_stack = pushToSemanticStack [] (reverse program_20) env
 
 main = do
 	putStrLn $ executeProgram sem_stack sas eq_sets

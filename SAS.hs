@@ -24,6 +24,7 @@ module SAS where
 				| OperateWithVar Ident Ident Operator Ident
 				| OperateWithVal Ident Ident Operator Value
 				| BindVarToRec Ident String [(String,Ident)]
+				| Case Ident String [(String,Ident)] Statements Statements
 				deriving (Show, Eq)
 
 	data Store = Null
