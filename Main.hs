@@ -2,25 +2,6 @@ import qualified Control.Exception as E
 import SAS
 import Environment
 
---data Ident = Ident String deriving (Show, Eq)
---data Value = Value String deriving (Show, Eq)
---data Operator = Plus | Minus | Multiply | Divide deriving (Show, Eq)
-----data Statements = Statements [PTree] deriving (Show, Eq)
-
---type Statements = [PTree]
---type SemanticStack = [(PTree,Env)]
-
---data PTree = Nop
---			| LocalVar Ident Statements
---			| BindVarToVar Ident Ident
---			| BindVarToVal Ident Value
---			| Conditional Ident Statements Statements
---			| BindVarToProc Ident [Ident] Statements
---			| Apply Ident [Ident]
---			| OperateWithVar Ident Ident Operator Ident
---			| OperateWithVal Ident Ident Operator Value
---			deriving (Show, Eq)
-
 pushToSemanticStack :: SemanticStack -> Statements -> Env -> SemanticStack
 pushToSemanticStack sem_stack [] _ = sem_stack
 pushToSemanticStack sem_stack (stmt:stmts) env = pushToSemanticStack ((stmt,env):sem_stack) stmts env
@@ -37,16 +18,28 @@ selectStatements (Datum "false") stmts_if stmts_else sem_stack sas eq_sets curr_
 																				new_sem_stack = pushToSemanticStack popped_stack (reverse stmts_else) curr_env
 selectStatements _ _ _ _ _ _ _ = error "Boolean value required for a Conditional clause."
 
-evaluateExpression :: Operator -> Int -> Int -> Int
-evaluateExpression Plus x y = x + y
-evaluateExpression Minus x y = x - y
-evaluateExpression Multiply x y = x * y
-evaluateExpression Divide x y = x `div` y
+evaluateExpression :: Operator -> String -> String -> String
+evaluateExpression Plus x y = show $ (read x :: Int) + (read y :: Int)
+evaluateExpression Minus x y = show $ (read x :: Int) - (read y :: Int)
+evaluateExpression Multiply x y = show $ (read x :: Int) * (read y :: Int)
+evaluateExpression Divide x y = show $ (read x :: Int) `div` (read y :: Int)
+evaluateExpression And "true" "true" = "true"
+evaluateExpression And "false" "true" = "false"
+evaluateExpression And "true" "false" = "false"
+evaluateExpression And "false" "false" = "false"
+evaluateExpression And _ _ = error "Operating 'And' on non-boolean value(s) in SAS."
+evaluateExpression Or "true" "true" = "true"
+evaluateExpression Or "false" "true" = "true"
+evaluateExpression Or "true" "false" = "true"
+evaluateExpression Or "false" "false" = "false"
+evaluateExpression Or _ _ = error "Operating 'Or' on non-boolean value(s) in SAS."
+evaluateExpression EqualEqualTo x y = if x==y then "true" else "false"
+evaluateExpression NotEqualTo x y = if x==y then "false" else "true"
 
-applyArithmeticOperation :: Operator -> Store -> Store -> Store
+applyOperation :: Operator -> Store -> Store -> Store
 -- TO DO: INCLUDE ERROR CHECKING - IF THE VALUES x AND y ARE VALID NUMBERS OR NOT
-applyArithmeticOperation op (Datum x) (Datum y) = Datum $ show (evaluateExpression op (read x :: Int) (read y :: Int))
-applyArithmeticOperation _ _ _ = error "Operating on incompatible values in SAS."
+applyOperation op (Datum x) (Datum y) = Datum $ evaluateExpression op x y
+applyOperation _ _ _ = error "Operating on incompatible values in SAS."
 
 findFromEnvironment :: Env -> [Ident] -> [Int] -> [Int]
 findFromEnvironment _ [] keys = keys
@@ -152,14 +145,14 @@ executeStatement sem_stack sas eq_sets = case curr_stmt of
 		new_sem_stack = tail sem_stack
 		new_sas = SAS.bindValToKeyInSAS key val sas eq_sets where
 			key = Environment.getVarInEnv r curr_env
-			val = applyArithmeticOperation op val_x (Datum v) where
+			val = applyOperation op val_x (Datum v) where
 				key_x = Environment.getVarInEnv x curr_env
 				val_x = SAS.retrieveFromSAS key_x sas
 	OperateWithVar (Ident r) (Ident x) op (Ident y) -> (new_sem_stack,new_sas,eq_sets) where
 		new_sem_stack = tail sem_stack
 		new_sas = SAS.bindValToKeyInSAS key val sas eq_sets where
 			key = Environment.getVarInEnv r curr_env
-			val = applyArithmeticOperation op val_x val_y where
+			val = applyOperation op val_x val_y where
 				key_x = Environment.getVarInEnv x curr_env
 				val_x = SAS.retrieveFromSAS key_x sas
 				key_y = Environment.getVarInEnv y curr_env
@@ -204,6 +197,7 @@ program_17 = [LocalVar (Ident "add_x_y") [LocalVar (Ident "x") [BindVarToProc (I
 program_18 = [LocalVar (Ident "add_x_y") [LocalVar (Ident "x") [BindVarToProc (Ident "add_x_y") [(Ident "y"), (Ident "z")] [OperateWithVar (Ident "z") (Ident "x") Plus (Ident "y")], BindVarToVal (Ident "x") (Value "2")], LocalVar (Ident "x") [LocalVar (Ident "y") [LocalVar (Ident "z") [BindVarToVal (Ident "x") (Value "10"), BindVarToVal (Ident "y") (Value "40"), Apply (Ident "x") [(Ident "y"), (Ident "z")]]]]]]
 program_19 = [LocalVar (Ident "someone") [LocalVar (Ident "name") [LocalVar (Ident "id") [BindVarToVal (Ident "id") (Value "786"), BindVarToRec (Ident "someone") "employee" [("name",(Ident "name")), ("id",(Ident "id"))]], BindVarToVal (Ident "name") (Value "ramu")]]]
 program_20 = [LocalVar (Ident "x") [LocalVar (Ident "y") [LocalVar (Ident "something") [BindVarToRec (Ident "something") "person" [("gender",(Ident "x")), ("age",(Ident "y"))], Case (Ident "something") "person" [("gender",(Ident "u")), ("age",(Ident "v"))] [BindVarToVal (Ident "u") (Value "pattern was matched..."), BindVarToVal (Ident "v") (Value "woohooo...")] [BindVarToVal (Ident "x") (Value "pattern was not matched..."), BindVarToVal (Ident "y") (Value "project completed!")]]]]]
+program_21 = [LocalVar (Ident "x") [LocalVar (Ident "y") [LocalVar (Ident "z") [BindVarToVal (Ident "x") (Value "apples"), BindVarToVal (Ident "y") (Value "oranges"), BindVarToVal (Ident "z") (Value "berries"), LocalVar (Ident "temp_1") [LocalVar (Ident "temp_2") [OperateWithVar (Ident "temp_1") (Ident "x") EqualEqualTo (Ident "y"), OperateWithVar (Ident "temp_2") (Ident "y") NotEqualTo (Ident "z"), LocalVar (Ident "result_1") [Conditional (Ident "temp_1") [BindVarToVal (Ident "result_1") (Value "apples are equal to oranges")] [BindVarToVal (Ident "result_1") (Value "apples are not equal to oranges")]], LocalVar (Ident "result_2") [Conditional (Ident "temp_2") [BindVarToVal (Ident "result_2") (Value "oranges are not equal to berries")] [BindVarToVal (Ident "result_2") (Value "oranges are equal to berries")]]]]]]]]
 (sas,eq_sets) = SAS.initializeSAS
 env = Environment.initializeEnv
 sem_stack = pushToSemanticStack [] (reverse program_20) env

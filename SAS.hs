@@ -7,7 +7,7 @@ module SAS where
 
 	data Ident = Ident String deriving (Show, Eq)
 	data Value = Value String deriving (Show, Eq)
-	data Operator = Plus | Minus | Multiply | Divide deriving (Show, Eq)
+	data Operator = Plus | Minus | Multiply | Divide | And | Or | EqualEqualTo | NotEqualTo deriving (Show, Eq)
 	data Literal = Literal String deriving (Show, Eq)
 	--data Statements = Statements [PTree] deriving (Show, Eq)
 
