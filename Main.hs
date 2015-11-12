@@ -173,7 +173,7 @@ executeStatement sem_stack sas eq_sets = case curr_stmt of
 
 executeProgram :: SemanticStack -> SAS -> EqSets -> String
 executeProgram sem_stack sas eq_sets = case sem_stack of
-	[] -> concat ["SAS: ", show sas, "\n", "EqSets: ", show eq_sets]
+	[] -> concat ["SAS: ", show sas, "\n\n", "EqSets: ", show eq_sets]
 	top:bottom -> executeProgram new_sem_stack new_sas new_eq_sets where
 		(new_sem_stack,new_sas,new_eq_sets) = executeStatement sem_stack sas eq_sets
 
@@ -201,8 +201,64 @@ program_21 = [LocalVar (Ident "x") [LocalVar (Ident "y") [LocalVar (Ident "z") [
 program_22 = [LocalVar (Ident "factorial") [BindVarToProc (Ident "factorial") [(Ident "n"), (Ident "result")] [LocalVar (Ident "temp") [OperateWithVal (Ident "temp") (Ident "n") EqualEqualTo (Value "0"), Conditional (Ident "temp") [BindVarToVal (Ident "result") (Value "1")] [LocalVar (Ident "rec_result") [LocalVar (Ident "rec_n") [OperateWithVal (Ident "rec_n") (Ident "n") Minus (Value "1"), Apply (Ident "factorial") [(Ident "rec_n"), (Ident "rec_result")], OperateWithVar (Ident "result") (Ident "rec_result") Multiply (Ident "n")]]]]], LocalVar (Ident "n") [BindVarToVal (Ident "n") (Value "10"), LocalVar (Ident "result") [Apply (Ident "factorial") [(Ident "n"), (Ident "result")]]]]]
 (sas,eq_sets) = SAS.initializeSAS
 env = Environment.initializeEnv
-sem_stack = pushToSemanticStack [] (reverse program_22) env
+--sem_stack = pushToSemanticStack [] (reverse program_22) env
+
+showProgram :: Int -> String
+showProgram 1 = show program_1
+showProgram 2 = show program_2
+showProgram 3 = show program_3
+showProgram 4 = show program_4
+showProgram 5 = show program_5
+showProgram 6 = show program_6
+showProgram 7 = show program_7
+showProgram 8 = show program_8
+showProgram 9 = show program_9
+showProgram 10 = show program_10
+showProgram 11 = show program_11
+showProgram 12 = show program_12
+showProgram 13 = show program_13
+showProgram 14 = show program_14
+showProgram 15 = show program_15
+showProgram 16 = show program_16
+showProgram 17 = show program_17
+showProgram 18 = show program_18
+showProgram 19 = show program_19
+showProgram 20 = show program_20
+showProgram 21 = show program_21
+showProgram 22 = show program_22
+showProgram input = error $ concat ["Invalid input: ", "'program_", (show input), "' does not exist."]
+
+selectProgram :: Int -> SemanticStack
+selectProgram 1 = pushToSemanticStack [] (reverse program_1) env
+selectProgram 2 = pushToSemanticStack [] (reverse program_2) env
+selectProgram 3 = pushToSemanticStack [] (reverse program_3) env
+selectProgram 4 = pushToSemanticStack [] (reverse program_4) env
+selectProgram 5 = pushToSemanticStack [] (reverse program_5) env
+selectProgram 6 = pushToSemanticStack [] (reverse program_6) env
+selectProgram 7 = pushToSemanticStack [] (reverse program_7) env
+selectProgram 8 = pushToSemanticStack [] (reverse program_8) env
+selectProgram 9 = pushToSemanticStack [] (reverse program_9) env
+selectProgram 10 = pushToSemanticStack [] (reverse program_10) env
+selectProgram 11 = pushToSemanticStack [] (reverse program_11) env
+selectProgram 12 = pushToSemanticStack [] (reverse program_12) env
+selectProgram 13 = pushToSemanticStack [] (reverse program_13) env
+selectProgram 14 = pushToSemanticStack [] (reverse program_14) env
+selectProgram 15 = pushToSemanticStack [] (reverse program_15) env
+selectProgram 16 = pushToSemanticStack [] (reverse program_16) env
+selectProgram 17 = pushToSemanticStack [] (reverse program_17) env
+selectProgram 18 = pushToSemanticStack [] (reverse program_18) env
+selectProgram 19 = pushToSemanticStack [] (reverse program_19) env
+selectProgram 20 = pushToSemanticStack [] (reverse program_20) env
+selectProgram 21 = pushToSemanticStack [] (reverse program_21) env
+selectProgram 22 = pushToSemanticStack [] (reverse program_22) env
+selectProgram input = error $ concat ["Invalid input: ", "Program #", (show input), " does not exist."]
 
 main = do
-	putStrLn $ executeProgram sem_stack sas eq_sets
-	putStrLn "Hello world!"
+	putStrLn "Waiting for program code..."
+	input <- getLine
+	putStrLn "\nExecuting..."
+	putStrLn (showProgram $ read input)
+	putStrLn ""
+	putStrLn $ executeProgram (selectProgram $ read input) sas eq_sets
+	putStrLn ""
+	putStrLn "Exiting..."
