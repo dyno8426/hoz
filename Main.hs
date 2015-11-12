@@ -256,9 +256,9 @@ selectProgram input = error $ concat ["Invalid input: ", "Program #", (show inpu
 main = do
 	putStrLn "Waiting for program code..."
 	input <- getLine
-	putStrLn "\nExecuting..."
-	putStrLn (showProgram $ read input)
 	putStrLn ""
+	putStrLn (showProgram $ read input)
+	putStrLn "\nExecuting..."
 	putStrLn $ executeProgram (selectProgram $ read input) sas eq_sets
 	putStrLn ""
 	putStrLn "Exiting..."
